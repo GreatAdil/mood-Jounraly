@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Mood Journal</title>
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Noto+Sans+Devanagari:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- html2canvas for image generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #A0D2DB; /* Light Blue */
+            --secondary-color: #FFFFFF; /* White */
+            --accent-color: #75C9DB;
+            --text-color: #333333;
+            --text-light: #555555;
+            --pastel-bg: #F0F8FF; /* AliceBlue, very light pastel */
+            --border-color: #B0E0E6;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --font-family-en: 'Roboto', sans-serif;
+            --font-family-hi: 'Noto Sans Devanagari', sans-serif;
+            --success-green: #4CAF50;
+            --error-red: #F44336;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-family-en);
+            background-color: var(--pastel-bg);
+            color: var(--text-color);
+            overscroll-behavior-y: contain;
+        }
+
+        .app-container {
+            max-width: 450px;
+            margin: 0 auto;
+            min-height: 100vh;
+            background-color: var(--secondary-color);
+            box-shadow: 0 0 20px var(--shadow-color);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .screen {
+            display: none; 
+            flex-direction: column;
+            min-height: calc(100vh - 60px); /* Default for screens with bottom nav */
+            text-align: center;
+            flex-grow: 1;
+            width: 100%;
+        }
+        #splashScreen, #onboardingScreen { /* These don't have bottom nav initially */
+            min-height: 100vh;
+            justify-content: center; /* Center content for splash/onboarding */
+            align-items: center;
+            padding: 20px; /* Add padding directly as no wrapper */
+        }
+
+
+        .screen.active {
+            display: flex;
+            opacity: 1; 
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        .screen.exiting {
+            animation: fadeOut 0.3s ease-in forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(-20px); }
+        }
+
+
+        /* Splash Screen */
+        #splashScreen {
+            background-color: var(--primary-color);
+            color: var(--secondary-color);
+        }
+        #splashScreen .logo-container img {
+            width: 100px;
+            height: 100px;
+            border-radius: 20px;
+            animation: bounce 2s infinite ease-in-out;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+        #splashScreen h1 {
+            font-size: 2.5em;
+            margin-top: 20px;
+        }
+        #splashScreen .company-name {
+            margin-top: 10px;
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        /* Onboarding Screen */
+        #onboardingScreen .swiper-container { /* Direct child of onboarding screen */
+            width: 100%;
+            max-width: 350px; /* Limit width */
+            height: 300px; 
+            overflow: hidden; 
+            position: relative;
+            margin-bottom: 20px;
+        }
+        .onboarding-slide {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            visibility: hidden;
+        }
+        .onboarding-slide.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .onboarding-slide i {
+            font-size: 3em;
+            color: var(--accent-color);
+            margin-bottom: 20px;
+        }
+        .onboarding-slide h3 {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+        .onboarding-slide p {
+            font-size: 1em;
+            color: var(--text-light);
+        }
+        .onboarding-nav {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 300px;
+            margin-top: 20px;
+        }
+        .dots-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 15px;
+        }
+        .dot {
+            height: 10px;
+            width: 10px;
+            background-color: var(--border-color);
+            border-radius: 50%;
+            display: inline-block;
+            margin: 0 5px;
+            cursor: pointer;
+        }
+        .dot.active {
+            background-color: var(--accent-color);
+        }
+
+        /* Mood Selection Screen */
+        #moodSelectionScreen h2 {
+            margin-bottom: 30px;
+        }
+        .mood-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 320px;
+            margin-bottom: 20px; /* Space before ad if ad is last in wrapper */
+        }
+        .mood-button {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--secondary-color);
+            border: 2px solid var(--border-color);
+            border-radius: 50%; 
+            width: 80px;
+            height: 80px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 8px var(--shadow-color);
+            padding: 5px; 
+        }
+        .mood-button:hover {
+            transform: scale(1.1);
+            border-color: var(--accent-color);
+            box-shadow: 0 6px 12px var(--shadow-color);
+        }
+        .mood-button span.emoji {
+            font-size: 2.5em; 
+        }
+        .mood-item-container span.mood-text {
+            font-size: 0.7em;
+            margin-top: 5px;
+            color: var(--text-light);
+            font-weight: 500;
+            text-align: center;
+        }
+        .mood-item-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Journal Prompt Screen */
+        #journalPromptQuestion {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            color: var(--text-light);
+            min-height: 50px; 
+        }
+        #journalEntry {
+            width: 100%;
+            height: 200px;
+            padding: 15px;
+            border-radius: 15px;
+            border: 1px solid var(--border-color);
+            font-size: 1em;
+            margin-bottom: 20px;
+            resize: none;
+            background-color: var(--pastel-bg);
+        }
+        #journalEntry:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px var(--accent-color-light); /* Check var --accent-color-light definition */
+        }
+
+        /* Shayari Screen */
+        #shayariScreen { /* Screen itself for BG color */
+            background-color: var(--primary-color); 
+            color: var(--secondary-color); /* Default text color for this screen */
+        }
+        #shayariScreen h2 { color: var(--secondary-color); } /* Override for title */
+        #shayariDisplayCard {
+            background-color: var(--secondary-color); /* Card BG */
+            color: var(--text-color); /* Text on card */
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 8px 16px var(--shadow-color);
+            width: 90%;
+            max-width: 350px;
+            margin-bottom: 20px;
+            position: relative; 
+        }
+        #shayariText {
+            font-family: var(--font-family-hi), var(--font-family-en); 
+            font-size: 1.5em; 
+            color: var(--text-color); /* Ensure this is set if not inheriting */
+            margin-bottom: 20px;
+            min-height: 100px;
+            white-space: pre-wrap; 
+        }
+        .app-branding {
+            position: absolute;
+            bottom: 10px;
+            right: 15px;
+            font-size: 0.7em;
+            opacity: 0.6;
+            color: var(--text-light);
+        }
+        .shayari-actions button {
+            margin: 0 5px;
+        }
+
+        /* Success Screen */
+        #successScreen .success-icon {
+            font-size: 4em;
+            color: var(--success-green);
+            margin-bottom: 20px;
+        }
+        #successMessage {
+            font-size: 1.3em;
+            margin-bottom: 10px;
+        }
+        #motivationalQuote {
+            font-style: italic;
+            color: var(--text-light);
+        }
+
+        /* Dashboard Screen */
+        #dashboardScreen .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            width: 100%;
+        }
+        .dashboard-item {
+            background-color: var(--secondary-color);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px var(--shadow-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+            min-height: 120px;
+        }
+        .dashboard-item:hover {
+            transform: translateY(-5px);
+        }
+        .dashboard-item i {
+            font-size: 2.5em;
+            color: var(--accent-color);
+            margin-bottom: 10px;
+        }
+
+        /* History Screen */
+        #historyList {
+            width: 100%;
+            list-style: none;
+        }
+        .history-item {
+            background-color: var(--secondary-color);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px var(--shadow-color);
+            text-align: left;
+        }
+        .history-item .date {
+            font-weight: 500;
+            font-size: 0.9em;
+            color: var(--accent-color);
+        }
+        .history-item .mood {
+            font-size: 1.5em; 
+            margin: 5px 0;
+        }
+        .history-item .entry {
+            font-size: 0.95em;
+            color: var(--text-light);
+            white-space: pre-wrap;
+            max-height: 60px; 
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+         .history-item .shayari {
+            font-family: var(--font-family-hi), var(--font-family-en);
+            font-style: italic;
+            font-size: 0.9em;
+            color: var(--primary-color); /* Or a less prominent color */
+            margin-top: 5px;
+            padding-top: 5px;
+            border-top: 1px dashed var(--border-color);
+        }
+
+        /* Mood Analytics Screen */
+        .chart-container {
+            background-color: var(--secondary-color);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px var(--shadow-color);
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        .chart-container h3 {
+            margin-bottom: 15px;
+            color: var(--accent-color);
+        }
+        .bar-chart .bar {
+            background-color: var(--accent-color);
+            margin-bottom: 5px;
+            padding: 5px;
+            color: white;
+            border-radius: 5px;
+            font-size: 0.9em;
+            text-align: left;
+        }
+        .pie-chart-container {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background-image: conic-gradient( /* Default for no data */
+                #eee 0% 100% 
+            );
+            margin: 20px auto;
+        }
+        .analytics-legend { list-style: none; padding: 0; }
+        .analytics-legend li { margin-bottom: 5px; }
+        .legend-color-box { display: inline-block; width: 12px; height: 12px; margin-right: 5px; border-radius: 3px;}
+
+
+        /* Settings Screen */
+        .settings-item {
+            background-color: var(--secondary-color);
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px var(--shadow-color);
+            margin-bottom: 15px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .settings-item label {
+            font-size: 1.1em;
+        }
+        .language-toggle button {
+            padding: 8px 12px;
+            margin-left: 5px;
+            border: 1px solid var(--border-color);
+            background-color: var(--pastel-bg);
+            color: var(--text-color);
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .language-toggle button.active {
+            background-color: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+
+        /* General UI Elements */
+        .button {
+            background-color: var(--accent-color);
+            color: var(--secondary-color);
+            padding: 12px 25px;
+            border: none;
+            border-radius: 25px; 
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.2s, box-shadow 0.2s;
+            box-shadow: 0 2px 5px var(--shadow-color);
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .button i { 
+            margin-right: 8px;
+            font-size: 1.2em;
+        }
+        .button:hover {
+            background-color: #5BC0DE; 
+            box-shadow: 0 4px 8px var(--shadow-color);
+        }
+        .button.secondary {
+            background-color: var(--pastel-bg);
+            color: var(--accent-color);
+            border: 1px solid var(--accent-color);
+        }
+        .button.secondary:hover {
+            background-color: var(--border-color);
+        }
+        .button.small {
+            padding: 8px 15px;
+            font-size: 0.9em;
+            border-radius: 20px;
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background-color: var(--secondary-color);
+            border-top: 1px solid var(--border-color);
+            padding: 5px 0;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            max-width: 450px; 
+            margin: 0 auto; 
+            z-index: 100;
+            height: 60px; 
+        }
+        .bottom-nav button {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.7em;
+            padding: 5px 10px;
+            cursor: pointer;
+            flex-grow: 1;
+        }
+        .bottom-nav button i {
+            font-size: 1.8em; 
+            margin-bottom: 2px;
+        }
+        .bottom-nav button.active {
+            color: var(--accent-color);
+        }
+
+        /* AdMob Banner Placeholder */
+        .admob-banner-placeholder {
+            height: 50px; 
+            background-color: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 0.8em;
+            border-top: 1px solid #ddd;
+        }
+
+        /* Screen Content Wrapper - for screens with bottom nav */
+        .screen-content-wrapper {
+            flex-grow: 1; 
+            width: 100%;
+            overflow-y: auto; 
+            padding: 20px; 
+            padding-bottom: calc(60px + 20px); 
+            display: flex;
+            flex-direction: column;
+            align-items: center; 
+        }
+
+
+        .hidden { display: none !important; }
+        .text-center { text-align: center; }
+        .mb-1 { margin-bottom: 0.5rem; }
+        .mb-2 { margin-bottom: 1rem; }
+        .mb-3 { margin-bottom: 1.5rem; }
+        .mt-1 { margin-top: 0.5rem; }
+        .mt-2 { margin-top: 1rem; }
+        .mt-3 { margin-top: 1.5rem; }
+
+        @media (max-height: 600px) {
+            #onboardingScreen .swiper-container { height: 250px; }
+            .onboarding-slide i { font-size: 2.5em; }
+            .mood-grid { gap: 15px; }
+            .mood-button { width: 70px; height: 70px; }
+            .mood-button span.emoji { font-size: 2em; }
+            #journalEntry { height: 150px; }
+        }
+
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Splash Screen -->
+        <div id="splashScreen" class="screen active">
+            <div class="logo-container">
+                <img src="https://i.ibb.co/C3wQybgz/file-00000000256c6230bdb79cf448f75592.png" alt="App Logo">
+            </div>
+            <h1 data-translate="appTitle">Mood Journal</h1>
+            <p class="company-name" data-translate="companyName">Provided By Great</p>
+        </div>
+
+        <!-- Onboarding Screen -->
+        <div id="onboardingScreen" class="screen">
+            <div class="swiper-container">
+                <div class="onboarding-slide active" id="onboarding-slide-1">
+                    <i class="material-icons-round">psychology</i>
+                    <h3 data-translate="onboardingTitle1">Track Your Moods</h3>
+                    <p data-translate="onboardingText1">Understanding your emotions is the first step to managing them. Journaling helps!</p>
+                </div>
+                <div class="onboarding-slide" id="onboarding-slide-2">
+                    <i class="material-icons-round">auto_stories</i>
+                    <h3 data-translate="onboardingTitle2">Reflect and Grow</h3>
+                    <p data-translate="onboardingText2">Regular reflection can lead to personal insights and emotional growth.</p>
+                </div>
+                <div class="onboarding-slide" id="onboarding-slide-3">
+                    <i class="material-icons-round">emoji_emotions</i>
+                    <h3 data-translate="onboardingTitle3">Express Yourself</h3>
+                    <p data-translate="onboardingText3">Find healthy ways to express how you feel. Your journal is a safe space.</p>
+                </div>
+            </div>
+            <div class="dots-container">
+                <span class="dot active" data-slide="1"></span>
+                <span class="dot" data-slide="2"></span>
+                <span class="dot" data-slide="3"></span>
+            </div>
+            <div class="onboarding-nav mt-3">
+                <button class="button secondary small" id="skipOnboardingBtn" data-translate="skip">Skip</button>
+                <button class="button small" id="nextOnboardingBtn" data-translate="next">Next</button>
+            </div>
+        </div>
+
+        <!-- Mood Selection Screen -->
+        <div id="moodSelectionScreen" class="screen">
+            <div class="screen-content-wrapper">
+                <h2 data-translate="howAreYouFeeling" class="mb-3">How are you feeling today?</h2>
+                <div class="mood-grid">
+                </div>
+                <div class="admob-banner-placeholder" style="margin-top: auto; width:100%;">
+                    <span data-translate="adPlaceholder">Ad Banner (Mood)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Shayari Screen -->
+        <div id="shayariScreen" class="screen">
+            <div class="screen-content-wrapper" style="justify-content: center;"> 
+                <h2 data-translate="shayariForYou" class="mb-2">A Shayari for your mood...</h2>
+                <div id="shayariDisplayCard">
+                    <p id="shayariText" data-translate="loadingShayari">Loading Shayari...</p>
+                    <div class="app-branding">Mood Journal</div>
+                </div>
+                <div class="shayari-actions">
+                    <button class="button small" id="copyShayariBtn"><i class="material-icons-round">content_copy</i> <span data-translate="copy">Copy</span></button>
+                    <button class="button small" id="shareShayariBtn"><i class="material-icons-round">share</i> <span data-translate="share">Share</span></button>
+                    <button class="button small" id="saveShayariCardBtn"><i class="material-icons-round">photo_camera</i> <span data-translate="saveCard">Save Card</span></button>
+                </div>
+                <button class="button secondary mt-3" id="continueToJournalBtn" data-translate="continueToJournal">Continue to Journal</button>
+                <div class="admob-banner-placeholder" style="margin-top: auto; width:100%;">
+                    <span data-translate="adPlaceholder">Ad Banner (Shayari)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Journal Prompt Screen -->
+        <div id="journalPromptScreen" class="screen">
+            <div class="screen-content-wrapper">
+                <h2 data-translate="journalPromptTitle" class="mb-2">Journal Prompt</h2>
+                <p id="journalPromptQuestion" class="mb-2">Based on your mood, here's a thought starter...</p>
+                <textarea id="journalEntry" placeholder="Write your thoughts here..." data-translate-placeholder="journalPlaceholder"></textarea>
+                <button class="button" id="saveJournalBtn"><i class="material-icons-round">save</i> <span data-translate="saveEntry">Save Entry</span></button>
+                 <div class="admob-banner-placeholder" style="margin-top: auto; width:100%;">
+                    <span data-translate="adPlaceholder">Ad Banner (Journal)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Screen -->
+        <div id="successScreen" class="screen">
+            <div class="screen-content-wrapper" style="justify-content: center;">
+                <i class="material-icons-round success-icon">check_circle_outline</i>
+                <h2 id="successMessage" data-translate="entrySavedSuccess">Entry Saved Successfully!</h2>
+                <p id="motivationalQuote" class="mt-1">"The best way to predict the future is to create it."</p>
+            </div>
+        </div>
+
+        <!-- Dashboard Screen -->
+        <div id="dashboardScreen" class="screen">
+             <div class="screen-content-wrapper" style="justify-content: center;">
+                <h2 data-translate="dashboardTitle" class="mb-3">Dashboard</h2>
+                <div class="dashboard-grid">
+                    <div class="dashboard-item" data-target="moodSelectionScreen">
+                        <i class="material-icons-round">add_reaction</i>
+                        <span data-translate="newEntry">New Entry</span>
+                    </div>
+                    <div class="dashboard-item" data-target="historyScreen">
+                        <i class="material-icons-round">history</i>
+                        <span data-translate="journalHistory">Journal History</span>
+                    </div>
+                    <div class="dashboard-item" data-target="moodAnalyticsScreen">
+                        <i class="material-icons-round">analytics</i>
+                        <span data-translate="moodAnalytics">Mood Analytics</span>
+                    </div>
+                    <div class="dashboard-item" data-target="settingsScreen">
+                        <i class="material-icons-round">settings</i>
+                        <span data-translate="settings">Settings</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Screen -->
+        <div id="historyScreen" class="screen">
+            <div class="screen-content-wrapper">
+                <h2 data-translate="journalHistory" class="mb-3 text-center">Journal History</h2>
+                <ul id="historyList">
+                     <p data-translate="noHistory" class="text-center">No entries yet. Start journaling!</p>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Mood Analytics Screen -->
+        <div id="moodAnalyticsScreen" class="screen">
+             <div class="screen-content-wrapper">
+                <h2 data-translate="moodAnalytics" class="mb-3 text-center">Mood Analytics</h2>
+                <div class="chart-container">
+                    <h3 data-translate="moodFrequency">Mood Frequency (Bar Chart)</h3>
+                    <div id="barChartContainer" class="bar-chart">
+                        <p data-translate="noDataForChart">Not enough data for charts.</p>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <h3 data-translate="moodDistribution">Mood Distribution (Pie Chart)</h3>
+                    <div id="pieChartContainer" class="pie-chart-container">
+                    </div>
+                    <ul id="analyticsLegend" class="analytics-legend mt-2">
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Screen -->
+        <div id="settingsScreen" class="screen">
+            <div class="screen-content-wrapper">
+                <h2 data-translate="settings" class="mb-3 text-center">Settings</h2>
+                <div class="settings-item">
+                    <label data-translate="language">Language</label>
+                    <div class="language-toggle">
+                        <button id="langEnBtn" class="active">English</button>
+                        <button id="langHiBtn">हिन्दी</button>
+                    </div>
+                </div>
+                <div class="settings-item">
+                    <label data-translate="adsInfo">Advertisements</label>
+                    <span data-translate="adsDisplayedInfo" style="font-size:0.9em; color: var(--text-light);">Ads are displayed on certain screens.</span>
+                </div>
+                <div class="admob-banner-placeholder mt-3" style="margin-top: auto; width:100%;">
+                    <span data-translate="adPlaceholder">Ad Banner (Settings)</span>
+                </div>
+            </div>
+        </div>
+
+        <nav class="bottom-nav hidden">
+            <button data-target="dashboardScreen" class="active">
+                <i class="material-icons-round">dashboard</i>
+                <span data-translate="navDashboard">Dashboard</span>
+            </button>
+            <button data-target="historyScreen">
+                <i class="material-icons-round">history</i>
+                <span data-translate="navHistory">History</span>
+            </button>
+             <button data-target="moodSelectionScreen" class="add-entry-fab">
+                <i class="material-icons-round" style="font-size: 2.2em; color: var(--accent-color);">add_circle</i>
+                <span data-translate="navNewEntry">New Log</span>
+            </button>
+            <button data-target="moodAnalyticsScreen">
+                <i class="material-icons-round">analytics</i>
+                <span data-translate="navAnalytics">Analytics</span>
+            </button>
+            <button data-target="settingsScreen">
+                <i class="material-icons-round">settings</i>
+                <span data-translate="navSettings">Settings</span>
+            </button>
+        </nav>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        // THE ONLY CRITICAL CHANGE IS HERE: YOUR NEW API KEY
+        const GEMINI_API_KEY = "AIzaSyB34uabjPGAqQY0tYpyvhIijp_Ccl0_Y5c"; 
+        
+        const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
+        
+        const ADMOB_APP_ID = "ca-app-pub-8835462177153660~9620508566";
+        const ADMOB_BANNER_ID = "ca-app-pub-8835462177153660/4516355693";
+
+        // --- DOM Elements ---
+        const appContainer = document.querySelector('.app-container');
+        const bottomNav = document.querySelector('.bottom-nav');
+        const onboardingSlides = document.querySelectorAll('.onboarding-slide');
+        const onboardingDots = document.querySelectorAll('.dots-container .dot');
+        const moodGrid = document.querySelector('#moodSelectionScreen .mood-grid');
+        const journalEntryTextarea = document.getElementById('journalEntry');
+        const journalPromptQuestionEl = document.getElementById('journalPromptQuestion');
+        const shayariTextEl = document.getElementById('shayariText');
+        const historyListEl = document.getElementById('historyList');
+        const barChartContainerEl = document.getElementById('barChartContainer');
+        const pieChartContainerEl = document.getElementById('pieChartContainer');
+        const analyticsLegendEl = document.getElementById('analyticsLegend');
+
+
+        // --- APP STATE ---
+        let currentLanguage = localStorage.getItem('moodJournalLang') || 'en';
+        let currentOnboardingSlide = 0;
+        let journalEntries = JSON.parse(localStorage.getItem('moodJournalEntries')) || [];
+        let currentSelectedMood = null;
+        let currentShayari = "";
+
+        // --- TRANSLATIONS ---
+        const translations = {
+            en: {
+                appTitle: "Mood Journal",
+                companyName: "Provided By Great",
+                skip: "Skip",
+                next: "Next",
+                done: "Done",
+                onboardingTitle1: "Track Your Moods",
+                onboardingText1: "Understanding your emotions is the first step to managing them. Journaling helps!",
+                onboardingTitle2: "Reflect and Grow",
+                onboardingText2: "Regular reflection can lead to personal insights and emotional growth.",
+                onboardingTitle3: "Express Yourself",
+                onboardingText3: "Find healthy ways to express how you feel. Your journal is a safe space.",
+                howAreYouFeeling: "How are you feeling today?",
+                happy: "Happy",
+                sad: "Sad",
+                angry: "Angry",
+                calm: "Calm",
+                excited: "Excited",
+                tired: "Tired",
+                journalPromptTitle: "Journal Prompt",
+                journalPlaceholder: "Write your thoughts here...",
+                saveEntry: "Save Entry",
+                entrySavedSuccess: "Entry Saved Successfully!",
+                dashboardTitle: "Dashboard",
+                newEntry: "New Entry",
+                journalHistory: "Journal History",
+                moodAnalytics: "Mood Analytics",
+                settings: "Settings",
+                noHistory: "No entries yet. Start journaling!",
+                moodFrequency: "Mood Frequency (Bar Chart)",
+                moodDistribution: "Mood Distribution (Pie Chart)",
+                noDataForChart: "Not enough data for charts.",
+                language: "Language",
+                navDashboard: "Dashboard",
+                navHistory: "History",
+                navAnalytics: "Analytics",
+                navSettings: "Settings",
+                navNewEntry: "New Log",
+                shayariForYou: "A Shayari for your mood...",
+                loadingShayari: "Loading Shayari...",
+                copy: "Copy",
+                share: "Share",
+                saveCard: "Save Card",
+                continueToJournal: "Continue to Journal",
+                copiedToClipboard: "Copied to clipboard!",
+                shareNotSupported: "Share API not supported in your browser.",
+                errorFetchingShayari: "Could not fetch Shayari. Please try again.",
+                adsInfo: "Advertisements",
+                adsDisplayedInfo: "Ads are displayed on certain screens.",
+                adPlaceholder: "Ad Banner",
+                promptHappy: "What made you smile today? Describe a moment of joy.",
+                promptSad: "It's okay to feel sad. What's weighing on your mind? Write it down.",
+                promptAngry: "Anger is a strong emotion. What triggered it? How can you channel it constructively?",
+                promptCalm: "You're feeling calm. What contributes to this peace? How can you cultivate more of it?",
+                promptExcited: "Something exciting is happening! What are you looking forward to?",
+                promptTired: "You're feeling tired. What drained your energy today? What can help you recharge?",
+                defaultPrompt: "How are you truly feeling right now? Explore your thoughts."
+            },
+            hi: {
+                appTitle: "मूड जर्नल",
+                companyName: "ग्रेट द्वारा प्रदान किया गया",
+                skip: "छोड़ें",
+                next: "अगला",
+                done: "पूर्ण",
+                onboardingTitle1: "अपने मूड को ट्रैक करें",
+                onboardingText1: "अपनी भावनाओं को समझना उन्हें प्रबंधित करने का पहला कदम है। जर्नलिंग मदद करती है!",
+                onboardingTitle2: "चिंतन करें और बढ़ें",
+                onboardingText2: "नियमित चिंतन व्यक्तिगत अंतर्दृष्टि और भावनात्मक विकास की ओर ले जा सकता है।",
+                onboardingTitle3: "खुद को व्यक्त करें",
+                onboardingText3: "आप कैसा महसूस करते हैं, इसे व्यक्त करने के स्वस्थ तरीके खोजें। आपकी पत्रिका एक सुरक्षित स्थान है।",
+                howAreYouFeeling: "आज आप कैसा महसूस कर रहे हैं?",
+                happy: "खुश",
+                sad: "उदास",
+                angry: "गुस्सा",
+                calm: "शांत",
+                excited: "उत्साहित",
+                tired: "थका हुआ",
+                journalPromptTitle: "जर्नल प्रॉम्प्ट",
+                journalPlaceholder: "अपने विचार यहाँ लिखें...",
+                saveEntry: "एंट्री सहेजें",
+                entrySavedSuccess: "एंट्री सफलतापूर्वक सहेजी गई!",
+                dashboardTitle: "डैशबोर्ड",
+                newEntry: "नई एंट्री",
+                journalHistory: "जर्नल इतिहास",
+                moodAnalytics: "मूड विश्लेषण",
+                settings: "सेटिंग्स",
+                noHistory: "अभी तक कोई प्रविष्टि नहीं है। जर्नलिंग शुरू करें!",
+                moodFrequency: "मूड आवृत्ति (बार चार्ट)",
+                moodDistribution: "मूड वितरण (पाई चार्ट)",
+                noDataForChart: "चार्ट के लिए पर्याप्त डेटा नहीं।",
+                language: "भाषा",
+                navDashboard: "डैशबोर्ड",
+                navHistory: "इतिहास",
+                navAnalytics: "विश्लेषण",
+                navSettings: "सेटिंग्स",
+                navNewEntry: "नया लॉग",
+                shayariForYou: "आपके मूड के लिए एक शायरी...",
+                loadingShayari: "शायरी लोड हो रही है...",
+                copy: "कॉपी",
+                share: "साझा करें",
+                saveCard: "कार्ड सहेजें",
+                continueToJournal: "जर्नल पर जारी रखें",
+                copiedToClipboard: "क्लिपबोर्ड पर कॉपी किया गया!",
+                shareNotSupported: "आपके ब्राउज़र में शेयर एपीआई समर्थित नहीं है।",
+                errorFetchingShayari: "शायरी प्राप्त नहीं हो सकी। कृपया पुनः प्रयास करें।",
+                adsInfo: "विज्ञापन",
+                adsDisplayedInfo: "कुछ स्क्रीन पर विज्ञापन दिखाए जाते हैं।",
+                adPlaceholder: "विज्ञापन बैनर",
+                promptHappy: "आज आपको किस बात पर मुस्कान आई? खुशी का एक पल बताएं।",
+                promptSad: "उदास महसूस करना ठीक है। आपके मन पर क्या बोझ है? इसे लिख लें।",
+                promptAngry: "गुस्सा एक प्रबल भावना है। इसे किसने भड़काया? आप इसे रचनात्मक रूप से कैसे दिशा दे सकते हैं?",
+                promptCalm: "आप शांत महसूस कर रहे हैं। इस शांति में क्या योगदान है? आप इसे और कैसे बढ़ा सकते हैं?",
+                promptExcited: "कुछ रोमांचक हो रहा है! आप किस बात का इंतजार कर रहे हैं?",
+                promptTired: "आप थका हुआ महसूस कर रहे हैं। आज आपकी ऊर्जा किसने खत्म की? आपको रिचार्ज करने में क्या मदद कर सकता है?",
+                defaultPrompt: "आप अभी वास्तव में कैसा महसूस कर रहे हैं? अपने विचारों का अन्वेषण करें।"
+            }
+        };
+
+        const moodData = [
+            { name: 'happy', emoji: '😊', textKey: 'happy' },
+            { name: 'sad', emoji: '😢', textKey: 'sad' },
+            { name: 'angry', emoji: '😠', textKey: 'angry' },
+            { name: 'calm', emoji: '😌', textKey: 'calm' },
+            { name: 'excited', emoji: '🤩', textKey: 'excited' },
+            { name: 'tired', emoji: '😴', textKey: 'tired' }
+        ];
+
+        // --- UTILITY FUNCTIONS ---
+        function _(key) {
+            return translations[currentLanguage][key] || translations['en'][key] || key;
+        }
+
+        function updateUILanguage() {
+            document.documentElement.lang = currentLanguage;
+            document.body.style.fontFamily = currentLanguage === 'hi' ? 'var(--font-family-hi)' : 'var(--font-family-en)';
+            
+            document.querySelectorAll('[data-translate]').forEach(el => {
+                const key = el.dataset.translate;
+                el.textContent = _(key);
+            });
+            document.querySelectorAll('[data-translate-placeholder]').forEach(el => {
+                const key = el.dataset.translatePlaceholder;
+                el.placeholder = _(key);
+            });
+
+            renderMoods();
+            if (document.getElementById('onboardingScreen').classList.contains('active')) {
+                showOnboardingSlide(currentOnboardingSlide);
+            }
+            if (document.getElementById('historyScreen').classList.contains('active')) renderHistory();
+            if (document.getElementById('moodAnalyticsScreen').classList.contains('active')) renderAnalytics();
+
+            document.getElementById('langEnBtn').classList.toggle('active', currentLanguage === 'en');
+            document.getElementById('langHiBtn').classList.toggle('active', currentLanguage === 'hi');
+        }
+
+        async function showScreen(screenId) {
+            const currentActiveScreen = document.querySelector('.screen.active');
+            const targetScreen = document.getElementById(screenId);
+
+            if (currentActiveScreen && currentActiveScreen !== targetScreen) {
+                currentActiveScreen.classList.add('exiting');
+                await new Promise(resolve => setTimeout(() => {
+                    currentActiveScreen.classList.remove('active');
+                    currentActiveScreen.classList.remove('exiting'); 
+                    resolve();
+                }, 300)); 
+            }
+
+            if (targetScreen) {
+                targetScreen.classList.remove('exiting'); 
+                targetScreen.classList.add('active'); 
+
+                const screenContentWrapper = targetScreen.querySelector('.screen-content-wrapper');
+                if (screenContentWrapper) {
+                    screenContentWrapper.scrollTop = 0;
+                } else if (targetScreen.id === 'splashScreen' || targetScreen.id === 'onboardingScreen') {
+                    targetScreen.scrollTop = 0; 
+                }
+
+                if (screenId === 'splashScreen' || screenId === 'onboardingScreen') {
+                    bottomNav.classList.add('hidden');
+                } else {
+                    bottomNav.classList.remove('hidden');
+                    document.querySelectorAll('.bottom-nav button').forEach(btn => {
+                        btn.classList.toggle('active', btn.dataset.target === screenId);
+                    });
+                }
+                
+                if (screenId === 'historyScreen') renderHistory();
+                if (screenId === 'moodAnalyticsScreen') renderAnalytics();
+                if (screenId === 'moodSelectionScreen') { 
+                    journalEntryTextarea.value = ""; 
+                    currentShayari = ""; 
+                }
+            } else {
+                console.error("Screen not found:", screenId);
+            }
+        }
+        
+        function saveToLocalStorage() {
+            localStorage.setItem('moodJournalEntries', JSON.stringify(journalEntries));
+            localStorage.setItem('moodJournalLang', currentLanguage);
+        }
+
+        // --- ONBOARDING LOGIC ---
+        function showOnboardingSlide(index) {
+            onboardingSlides.forEach((slide, i) => {
+                slide.classList.toggle('active', i === index);
+            });
+            onboardingDots.forEach((dot, i) => {
+                dot.classList.toggle('active', i === index);
+            });
+            const nextBtn = document.getElementById('nextOnboardingBtn');
+            if (index === onboardingSlides.length - 1) {
+                nextBtn.textContent = _('done');
+            } else {
+                nextBtn.textContent = _('next');
+            }
+            const currentSlideEl = onboardingSlides[index];
+            currentSlideEl.querySelector('h3').textContent = _(currentSlideEl.querySelector('h3').dataset.translate);
+            currentSlideEl.querySelector('p').textContent = _(currentSlideEl.querySelector('p').dataset.translate);
+        }
+
+        document.getElementById('nextOnboardingBtn').addEventListener('click', () => {
+            currentOnboardingSlide++;
+            if (currentOnboardingSlide < onboardingSlides.length) {
+                showOnboardingSlide(currentOnboardingSlide);
+            } else {
+                localStorage.setItem('moodJournalOnboardingComplete', 'true');
+                showScreen('dashboardScreen');
+            }
+        });
+
+        document.getElementById('skipOnboardingBtn').addEventListener('click', () => {
+            localStorage.setItem('moodJournalOnboardingComplete', 'true');
+            showScreen('dashboardScreen');
+        });
+
+        onboardingDots.forEach(dot => {
+            dot.addEventListener('click', () => {
+                currentOnboardingSlide = parseInt(dot.dataset.slide) - 1;
+                showOnboardingSlide(currentOnboardingSlide);
+            });
+        });
+
+        // --- MOOD SELECTION ---
+        function renderMoods() {
+            moodGrid.innerHTML = ''; 
+            moodData.forEach(mood => {
+                const moodItemContainer = document.createElement('div');
+                moodItemContainer.className = 'mood-item-container';
+
+                const button = document.createElement('button');
+                button.className = 'mood-button';
+                button.dataset.mood = mood.name;
+                
+                const emojiSpan = document.createElement('span');
+                emojiSpan.className = 'emoji';
+                emojiSpan.textContent = mood.emoji;
+
+                const textSpan = document.createElement('span');
+                textSpan.className = 'mood-text'; 
+                textSpan.textContent = _(mood.textKey);
+                
+                button.appendChild(emojiSpan);
+                
+                moodItemContainer.appendChild(button);
+                moodItemContainer.appendChild(textSpan); 
+
+                button.addEventListener('click', () => handleMoodSelection(mood.name, mood.emoji));
+                moodGrid.appendChild(moodItemContainer);
+            });
+        }
+
+        async function handleMoodSelection(moodName, moodEmoji) {
+            currentSelectedMood = { name: moodName, emoji: moodEmoji };
+            shayariTextEl.textContent = _('loadingShayari');
+            showScreen('shayariScreen');
+            try {
+                const shayari = await fetchShayari(moodName);
+                currentShayari = shayari;
+                shayariTextEl.textContent = shayari; 
+            } catch (error) { 
+                console.error("Unexpected error in handleMoodSelection:", error);
+                shayariTextEl.textContent = _('errorFetchingShayari');
+                currentShayari = ""; 
+            }
+        }
+        
+        // --- SHAYARI GENERATOR ---
+        async function fetchShayari(mood) {
+            const prompt = `Write a short, two to four line Hindi shayari or poetic quote (in Devanagari script) based on the feeling of "${mood}". If the mood is positive, make it uplifting. If negative, make it thoughtful or hopeful. Only provide the shayari text. Be creative.`;
+            console.log("Fetching Shayari for mood:", mood, "using URL:", GEMINI_API_URL);
+            shayariTextEl.textContent = _('loadingShayari'); 
+
+            try {
+                const response = await fetch(GEMINI_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: {
+                            temperature: 0.8, 
+                            maxOutputTokens: 150 
+                        },
+                        safetySettings: [ 
+                            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+                            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+                            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+                            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+                        ]
+                    }),
+                });
+
+                const responseData = await response.json();
+                console.log('Gemini API Full Response:', responseData);
+
+                if (!response.ok) {
+                    console.error('Gemini API Error - Status:', response.status, 'Response Data:', responseData);
+                    let errorMessage = _('errorFetchingShayari');
+                    if (responseData.error && responseData.error.message) {
+                        if (responseData.error.message.includes("API key expired")) {
+                             errorMessage = `${_('errorFetchingShayari')} (API: API key expired. Please renew the API key.)`;
+                        } else if (responseData.error.message.includes("API key not valid")) {
+                             errorMessage = `${_('errorFetchingShayari')} (API: API key not valid. Please pass a valid API key.)`;
+                        } else {
+                            const modelNotFoundMatch = responseData.error.message.match(/API:\s*(models\/.*?)\s*is not found/);
+                            if (modelNotFoundMatch && modelNotFoundMatch[1]) {
+                                errorMessage = `Error: Model "${modelNotFoundMatch[1]}" not found. Try a different model in JS code.`;
+                            } else {
+                                const detailMatch = responseData.error.message.match(/\[.*?\]\s*(.*)/);
+                                 if (detailMatch && detailMatch[1]) {
+                                     errorMessage += ` (API: ${detailMatch[1]})`;
+                                } else {
+                                     errorMessage += ` (API: ${responseData.error.message})`;
+                                }
+                            }
+                        }
+                    }
+                    else if (response.status === 400) errorMessage = "API Request Error (400): Bad input. Check API key or prompt.";
+                    else if (response.status === 403) errorMessage = "API Permission Denied (403): Check API key permissions for Generative Language API.";
+                    else if (response.status === 429) errorMessage = "API Rate Limit Exceeded (429). Please try again later.";
+                    else if (response.status === 500) errorMessage = "API Server Error (500). Please try again later.";
+                    
+                    return errorMessage; 
+                }
+
+                if (responseData.promptFeedback && responseData.promptFeedback.blockReason) {
+                    console.warn("Shayari generation blocked:", responseData.promptFeedback.blockReason, "Safety Ratings:", responseData.promptFeedback.safetyRatings);
+                    return `Shayari was blocked: ${responseData.promptFeedback.blockReason}. Try a different mood.`;
+                }
+
+                if (responseData.candidates && responseData.candidates.length > 0 &&
+                    responseData.candidates[0].content &&
+                    responseData.candidates[0].content.parts &&
+                    responseData.candidates[0].content.parts.length > 0 &&
+                    responseData.candidates[0].content.parts[0].text) {
+                    let generatedText = responseData.candidates[0].content.parts[0].text.trim();
+                    generatedText = generatedText.replace(/^```(text|json|hindi)?\s*|```$/gm, '').trim(); 
+                    console.log("Generated Shayari Text:", generatedText);
+                    return generatedText;
+                } else {
+                    console.warn("No valid shayari content found in API response.", responseData);
+                    return "Couldn't generate Shayari. Unexpected API response format.";
+                }
+
+            } catch (error) {
+                console.error('Error in fetchShayari function (network or JSON parsing):', error);
+                return `${_('errorFetchingShayari')} (Network or parsing error)`;
+            }
+        }
+
+
+        document.getElementById('copyShayariBtn').addEventListener('click', () => {
+            const nonShareableKeywords = ['error', 'blocked', 'not found', 'denied', 'expired', 'not valid'];
+            const isShareable = currentShayari && currentShayari !== _('loadingShayari') && 
+                               !nonShareableKeywords.some(keyword => currentShayari.toLowerCase().includes(keyword));
+
+            if (navigator.clipboard && isShareable) {
+                navigator.clipboard.writeText(currentShayari)
+                    .then(() => alert(_('copiedToClipboard')))
+                    .catch(err => console.error('Failed to copy: ', err));
+            } else if (currentShayari) {
+                alert("Cannot copy this message.");
+            }
+        });
+
+        document.getElementById('shareShayariBtn').addEventListener('click', () => {
+            const nonShareableKeywords = ['error', 'blocked', 'not found', 'denied', 'expired', 'not valid'];
+            const isShareable = currentShayari && currentShayari !== _('loadingShayari') && 
+                               !nonShareableKeywords.some(keyword => currentShayari.toLowerCase().includes(keyword));
+
+            if (navigator.share && isShareable) {
+                navigator.share({
+                    title: _('shayariForYou'),
+                    text: currentShayari + "\n- Mood Journal App",
+                })
+                .catch(err => console.error('Error sharing: ', err));
+            } else if (currentShayari) {
+                 alert("Cannot share this message.");
+            } else {
+                alert(_('shareNotSupported'));
+            }
+        });
+        
+        document.getElementById('saveShayariCardBtn').addEventListener('click', () => {
+            const nonShareableKeywords = ['error', 'blocked', 'not found', 'denied', 'expired', 'not valid'];
+            const isShareable = currentShayari && currentShayari !== _('loadingShayari') && 
+                               !nonShareableKeywords.some(keyword => currentShayari.toLowerCase().includes(keyword));
+
+            if (!isShareable) {
+                alert("Cannot save this card as image.");
+                return;
+            }
+            const cardElement = document.getElementById('shayariDisplayCard');
+            if (html2canvas) {
+                html2canvas(cardElement, { 
+                    backgroundColor: getComputedStyle(document.getElementById('shayariScreen')).backgroundColor,
+                    useCORS: true 
+                }).then(canvas => {
+                    const image = canvas.toDataURL('image/png');
+                    const link = document.createElement('a');
+                    link.download = `mood-journal-shayari-${currentSelectedMood?.name || 'card'}.png`;
+                    link.href = image;
+                    link.click();
+                }).catch(err => {
+                    console.error("Error generating card image:", err);
+                    alert("Failed to generate image card.");
+                });
+            } else {
+                alert("Image generation library not loaded.");
+            }
+        });
+
+        document.getElementById('continueToJournalBtn').addEventListener('click', () => {
+            const moodName = currentSelectedMood ? currentSelectedMood.name : 'default';
+            const promptKey = `prompt${moodName.charAt(0).toUpperCase() + moodName.slice(1)}`;
+            journalPromptQuestionEl.textContent = _(promptKey) || _('defaultPrompt');
+            showScreen('journalPromptScreen');
+        });
+
+        // --- JOURNAL PROMPT & SAVE ---
+        document.getElementById('saveJournalBtn').addEventListener('click', () => {
+            const entryText = journalEntryTextarea.value.trim();
+            if (!currentSelectedMood) {
+                alert("Error: Mood not selected. Please go back and select a mood.");
+                showScreen('moodSelectionScreen');
+                return;
+            }
+             if (!entryText) {
+                alert("Please write something in your journal.");
+                return;
+            }
+            let shayariToSave = currentShayari;
+            const nonSaveableKeywords = ['loadingShayari', 'error', 'blocked', 'not found', 'unexpected api response', 'denied', 'expired', 'not valid'];
+
+            if (nonSaveableKeywords.some(keyword => shayariToSave.toLowerCase().includes(keyword))) {
+                 shayariToSave = ""; 
+            }
+
+
+            journalEntries.unshift({
+                id: Date.now(),
+                date: new Date().toISOString(),
+                mood: currentSelectedMood, 
+                entry: entryText,
+                shayari: shayariToSave
+            });
+            saveToLocalStorage();
+            journalEntryTextarea.value = ''; 
+            currentShayari = ""; 
+            
+            document.getElementById('successMessage').textContent = _('entrySavedSuccess');
+            const quotes = [
+                "The best way to predict the future is to create it.",
+                "Believe you can and you're halfway there.",
+                "Every day is a new beginning.",
+                "Your feelings are valid."
+            ];
+            document.getElementById('motivationalQuote').textContent = `"${quotes[Math.floor(Math.random() * quotes.length)]}"`;
+            showScreen('successScreen');
+            setTimeout(() => {
+                showScreen('dashboardScreen');
+            }, 2500); 
+        });
+
+        // --- HISTORY SCREEN ---
+        function renderHistory() {
+            historyListEl.innerHTML = ''; 
+            if (journalEntries.length === 0) {
+                historyListEl.innerHTML = `<li class="text-center" data-translate="noHistory">${_('noHistory')}</li>`;
+                return;
+            }
+            journalEntries.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'history-item';
+                const itemDate = new Date(item.date);
+                const formattedDate = `${itemDate.toLocaleDateString(currentLanguage === 'hi' ? 'hi-IN' : 'en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })} ${itemDate.toLocaleTimeString(currentLanguage === 'hi' ? 'hi-IN' : 'en-US', {hour: '2-digit', minute:'2-digit'})}`;
+
+                let shayariHTML = '';
+                if (item.shayari && item.shayari.trim() !== "") { 
+                    shayariHTML = `<div class="shayari">"${item.shayari.replace(/\n/g, "<br>")}"</div>`;
+                }
+                const moodDisplayName = item.mood?.name ? _(item.mood.name) : 'Mood'; 
+
+                li.innerHTML = `
+                    <div class="date">${formattedDate}</div>
+                    <div class="mood">${item.mood?.emoji || '❓'} <span style="font-size:0.8em; color: var(--text-light);">${moodDisplayName}</span></div>
+                    <div class="entry">${item.entry.length > 100 ? item.entry.substring(0,100) + '...' : item.entry}</div>
+                    ${shayariHTML}
+                `;
+                historyListEl.appendChild(li);
+            });
+        }
+
+        // --- MOOD ANALYTICS ---
+        function renderAnalytics() {
+            barChartContainerEl.innerHTML = '';
+            analyticsLegendEl.innerHTML = '';
+            pieChartContainerEl.style.backgroundImage = 'conic-gradient(#eee 0% 100%)'; 
+
+            if (journalEntries.length < 1) { 
+                barChartContainerEl.innerHTML = `<p data-translate="noDataForChart">${_('noDataForChart')}</p>`;
+                return;
+            }
+
+            const moodCounts = {};
+            let totalValidEntriesForChart = 0;
+            journalEntries.forEach(entry => {
+                if (entry.mood && entry.mood.name) { 
+                    moodCounts[entry.mood.name] = (moodCounts[entry.mood.name] || 0) + 1;
+                    totalValidEntriesForChart++;
+                }
+            });
+
+            if (Object.keys(moodCounts).length === 0 || totalValidEntriesForChart === 0) {
+                barChartContainerEl.innerHTML = `<p data-translate="noDataForChart">${_('noDataForChart')}</p>`;
+                return;
+            }
+
+            for (const moodName in moodCounts) {
+                const moodInfo = moodData.find(m => m.name === moodName);
+                const bar = document.createElement('div');
+                bar.className = 'bar';
+                const percentage = (moodCounts[moodName] / totalValidEntriesForChart) * 100; 
+                bar.style.width = `${Math.max(5, percentage)}%`; 
+                bar.textContent = `${moodInfo ? moodInfo.emoji : ''} ${_(moodName)}: ${moodCounts[moodName]}`;
+                barChartContainerEl.appendChild(bar);
+            }
+
+            const moodColors = ['#FFB6C1', '#ADD8E6', '#90EE90', '#FFDAB9', '#E6E6FA', '#FAFAD2', '#F0E68C', '#B0C4DE'];
+            let gradientString = 'conic-gradient(';
+            let currentAngle = 0;
+            let colorIndex = 0;
+            const sortedMoods = Object.keys(moodCounts).sort((a,b) => moodCounts[b] - moodCounts[a]); 
+
+            for (const moodName of sortedMoods) {
+                const moodInfo = moodData.find(m => m.name === moodName);
+                const percentage = (moodCounts[moodName] / totalValidEntriesForChart) * 100;
+                const color = moodColors[colorIndex % moodColors.length];
+                
+                if (percentage > 0) { 
+                    if (gradientString !== 'conic-gradient(' && currentAngle < 99.9) gradientString += ', ';
+                    gradientString += `${color} ${currentAngle}% ${currentAngle + percentage}%`;
+                    currentAngle += percentage;
+                }
+                
+                const legendItem = document.createElement('li');
+                legendItem.innerHTML = `<span class="legend-color-box" style="background-color:${color};"></span> ${moodInfo ? moodInfo.emoji : ''} ${_(moodName)} (${moodCounts[moodName]})`;
+                analyticsLegendEl.appendChild(legendItem);
+                colorIndex++;
+            }
+            gradientString += ')';
+            if (Object.keys(moodCounts).length > 0) { 
+                 pieChartContainerEl.style.backgroundImage = gradientString;
+            }
+        }
+
+        // --- SETTINGS ---
+        document.getElementById('langEnBtn').addEventListener('click', () => {
+            currentLanguage = 'en';
+            updateUILanguage();
+            saveToLocalStorage();
+        });
+        document.getElementById('langHiBtn').addEventListener('click', () => {
+            currentLanguage = 'hi';
+            updateUILanguage();
+            saveToLocalStorage();
+        });
+
+        // --- BOTTOM NAVIGATION HANDLER ---
+        bottomNav.addEventListener('click', (e) => {
+            const targetButton = e.target.closest('button');
+            if (targetButton && targetButton.dataset.target) {
+                showScreen(targetButton.dataset.target);
+            }
+        });
+
+        document.querySelectorAll('#dashboardScreen .dashboard-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const targetScreen = item.dataset.target;
+                if (targetScreen) {
+                    showScreen(targetScreen);
+                }
+            });
+        });
+
+        // --- INITIALIZATION ---
+        function initApp() {
+            updateUILanguage(); 
+            renderMoods();    
+
+            const onboardingComplete = localStorage.getItem('moodJournalOnboardingComplete');
+            
+            if (!onboardingComplete) {
+                setTimeout(() => {
+                    showScreen('onboardingScreen');
+                    showOnboardingSlide(0); 
+                }, 2000); 
+            } else {
+                 setTimeout(() => {
+                    showScreen('dashboardScreen');
+                 }, 1500); 
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initApp);
+
+    </script>
+</body>
+</html>
