@@ -1,0 +1,508 @@
+:root {
+    --dark-green: #1B5E20;
+    --light-green: #A5D6A7;
+    --neon-green: #00FF00;
+    --white: #FFFFFF;
+    --text-color: var(--white); /* Default text color */
+    --background-dark: var(--dark-green);
+    --background-light: var(--light-green);
+}
+
+body {
+    margin: 0;
+    font-family: sans-serif;
+    background-color: var(--background-dark);
+    color: var(--text-color);
+}
+
+.app-container {
+    max-width: 480px;
+    min-height: 100vh;
+    margin: 0 auto;
+    background-color: var(--background-dark);
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* Screen base styles */
+.screen {
+    display: flex; /* Change from none to flex to allow opacity transition */
+    opacity: 0;
+    visibility: hidden; /* Use visibility to prevent interaction with hidden screens */
+    transition: opacity 0.3s ease-in-out, visibility 0s linear 0.3s; /* Delay visibility change */
+
+    flex-direction: column;
+    /* align-items: center; */ /* Keep these commented or per-screen */
+    /* justify-content: center; */ /* Keep these commented or per-screen */
+    min-height: 100vh;
+    padding: 20px; /* Default padding, can be overridden */
+    box-sizing: border-box;
+    position: absolute;
+    width: 100%;
+    top: 0;
+    left: 0;
+    /* Ensure specific screen backgrounds are set, or set a default here if needed */
+    /* background-color: var(--background-dark); */ /* Example default, if not overridden */
+}
+
+.screen.active {
+    opacity: 1;
+    visibility: visible;
+    transition-delay: 0s; /* Ensure visibility transition applies immediately on active */
+    z-index: 1; /* Default z-index for active non-overlay screens */
+}
+
+/* Ensure overlays have a higher z-index */
+.screen.overlay.active {
+    z-index: 10;
+}
+
+
+/* Specific screen styling adjustments */
+#splashScreen {
+    background: linear-gradient(to bottom, var(--dark-green), var(--light-green));
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+#splashScreen .logo {
+    font-size: 3em; /* Adjust as needed */
+    font-weight: bold;
+    color: var(--neon-green);
+    margin-bottom: 10px;
+}
+
+#splashScreen .subtext {
+    font-size: 1em; /* Adjust as needed */
+    color: var(--white); /* Or var(--light-green) if it looks better */
+}
+
+
+#homeScreen {
+    background-color: var(--dark-green); /* Placeholder for maze pattern */
+    /* TODO: Add faint green maze pattern background later */
+    /* display: flex; Ensure it's hidden initially unless 'active' - handled by .screen */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    /* padding: 20px; */ /* Uses default .screen padding */
+}
+
+.menu-button {
+    background-color: var(--light-green);
+    color: var(--dark-green); /* Text color that contrasts with light-green */
+    border: none;
+    border-radius: 15px; /* Rounded buttons */
+    padding: 15px 30px;
+    font-size: 1.2em;
+    margin: 10px 0;
+    width: 70%; /* Or a fixed width like 250px */
+    max-width: 300px;
+    cursor: pointer;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.3s ease;
+}
+
+.menu-button:hover {
+    background-color: var(--neon-green); /* Highlight on hover */
+    color: var(--dark-green);
+}
+
+.menu-button .icon {
+    margin-right: 15px; /* Space between icon and text */
+    font-size: 1.5em; /* Larger icon */
+}
+
+#levelSelectScreen {
+    background-color: var(--light-green);
+    /* TODO: Add faint maze lines in the background later */
+    color: var(--dark-green); /* Text color for this screen */
+    display: flex; /* Ensure it's hidden initially unless 'active' */
+    flex-direction: column;
+    justify-content: space-between; /* Pushes back button to bottom */
+    align-items: center;
+    /* padding-top: 60px; Account for top-bar if it's fixed - handled by no default padding */
+}
+
+#levelSelectScreen .top-bar {
+    position: absolute; /* Or fixed, depending on scroll behavior */
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 10px 0;
+    background-color: var(--dark-green); /* Or a slightly darker shade of light-green */
+    color: var(--white);
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+#levelSelectScreen .top-bar h2 {
+    margin: 0;
+    font-size: 1.5em;
+}
+
+.level-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); /* Responsive grid */
+    gap: 15px;
+    padding: 20px;
+    width: 100%;
+    max-width: 400px; /* Max width for the grid */
+    overflow-y: auto; /* If many levels, allow scroll */
+    flex-grow: 1; /* Allows grid to take available space */
+}
+
+.level-icon {
+    background-color: var(--dark-green);
+    color: var(--white);
+    border-radius: 10px;
+    padding: 15px;
+    font-size: 1.5em;
+    font-weight: bold;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.level-icon:hover {
+    transform: scale(1.1);
+    background-color: var(--neon-green);
+    color: var(--dark-green);
+}
+
+.level-icon.locked {
+    background-color: #5a7e5e; /* Darker, desaturated green */
+    color: #a5d6a7; /* Lighter text for contrast */
+    cursor: not-allowed;
+}
+.level-icon.locked::after {
+    content: "🔒"; /* Lock icon */
+    font-size: 0.6em;
+    display: block;
+    margin-top: 5px;
+}
+
+#levelSelectScreen .back-button { /* Specific styling for back button if needed */
+    width: auto; /* Auto width based on content */
+    padding: 10px 20px;
+    margin-bottom: 10px; /* Space from bottom */
+    align-self: center; /* Center it */
+}
+
+#gamePlayScreen {
+    background-color: var(--dark-green);
+    color: var(--white);
+    display: flex; /* Hidden unless active */
+    flex-direction: column;
+    justify-content: space-between; /* Pushes controls to bottom, top bar to top */
+    align-items: center;
+    /* padding: 0; Game play screen manages its internal padding for sub-areas */
+}
+
+.top-game-bar {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: rgba(0,0,0,0.2); /* Slight dark overlay */
+    box-sizing: border-box;
+}
+
+#timerDisplay, #movesCounter {
+    font-size: 1em;
+}
+
+.icon-button { /* For pause, etc. */
+    background: none;
+    border: none;
+    color: var(--white);
+    font-size: 1.5em;
+    cursor: pointer;
+}
+.icon-button:hover {
+    color: var(--neon-green);
+}
+
+.maze-area {
+    flex-grow: 1; /* Takes up available space */
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px; /* Padding around the maze container */
+    box-sizing: border-box;
+}
+
+#mazeContainer {
+    width: 90vw; /* Responsive width */
+    height: 90vw; /* Responsive height, creates a square */
+    max-width: 400px; /* Max size */
+    max-height: 400px; /* Max size */
+    background-color: var(--light-green); /* Maze background */
+    border: 2px solid var(--neon-green);
+    position: relative; /* For positioning player and goal tokens */
+    box-shadow: 0 0 15px var(--neon-green);
+}
+
+#playerToken {
+    width: 20px;
+    height: 20px;
+    background-color: var(--neon-green);
+    border-radius: 50%;
+    position: absolute;
+    top: 10px; /* Example starting position */
+    left: 10px; /* Example starting position */
+    box-shadow: 0 0 10px var(--neon-green);
+}
+
+#goalToken {
+    width: 20px;
+    height: 20px;
+    background-color: #FFD700; /* Gold, or a lighter neon green */
+    border-radius: 50%;
+    position: absolute;
+    bottom: 10px; /* Example goal position */
+    right: 10px; /* Example goal position */
+    box-shadow: 0 0 10px #FFD700;
+}
+
+.controls-area {
+    width: 100%;
+    padding: 10px;
+    background-color: rgba(0,0,0,0.3); /* Transparent black strip */
+    display: flex;
+    flex-direction: column; /* Stack rows of controls */
+    align-items: center;
+    box-sizing: border-box;
+}
+.controls-middle-row {
+    display: flex;
+    justify-content: space-between;
+    width: 150px; /* Width for left/right buttons */
+    margin: 5px 0;
+}
+
+.control-button {
+    background-color: var(--light-green);
+    color: var(--dark-green);
+    border: none;
+    border-radius: 50%; /* Circular buttons */
+    width: 60px;
+    height: 60px;
+    font-size: 1.8em;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.control-button:hover {
+    background-color: var(--neon-green);
+}
+.control-button .icon {
+  line-height: 1; /* Helps center emoji icons better */
+}
+
+.screen.overlay {
+    background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent background */
+    justify-content: center;
+    align-items: center;
+    z-index: 10; /* Ensure it's on top of other screens - handled by .screen.overlay.active */
+    /* display: none; by default from .screen, add .active to show - handled by .screen */
+    justify-content: center; /* Added for overlay content centering */
+    align-items: center; /* Added for overlay content centering */
+}
+
+/* Optional: Add a blur effect to the screen underneath when an overlay is active */
+/* This would require JS to add a class to .app-container or specific screens */
+.app-container.blurred > .screen:not(.overlay) {
+    filter: blur(5px);
+}
+
+
+#pauseScreen .popup-box {
+    background-color: var(--dark-green);
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+    text-align: center;
+    width: 80%;
+    max-width: 300px;
+    border: 1px solid var(--neon-green);
+}
+
+#pauseScreen .popup-box h2 {
+    color: var(--neon-green);
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.8em;
+}
+
+/* Reuse .menu-button style for consistency, but adjust margins if needed */
+#pauseScreen .menu-button {
+    background-color: var(--light-green);
+    color: var(--dark-green);
+    display: block; /* Stack buttons vertically */
+    width: 100%; /* Full width within popup */
+    margin: 10px 0; /* Consistent margin */
+    text-align: center; /* Center text in buttons */
+}
+#pauseScreen .menu-button .icon { /* If icons were used, ensure they are hidden or styled */
+    display: none;
+}
+
+#levelCompleteScreen {
+    background-color: rgba(0, 0, 0, 0.6); /* Similar to pause overlay */
+    justify-content: center;
+    align-items: center;
+    z-index: 10; /* Ensure it's on top - handled by .screen.overlay.active */
+    justify-content: center; /* Added for overlay content centering */
+    align-items: center; /* Added for overlay content centering */
+}
+
+/* Reuse .popup-box styles from Pause Screen. Add specific styles if needed. */
+#levelCompleteScreen .popup-box {
+    /* Inherits styles from existing .popup-box */
+    /* May need adjustments if content differs significantly */
+    border-color: var(--neon-green); /* Ensure consistent border */
+}
+
+#levelCompleteScreen .popup-box h2 {
+    color: var(--neon-green);
+    font-size: 2em; /* Larger title */
+}
+
+.stats-display {
+    margin: 20px 0;
+    font-size: 1.1em;
+    color: var(--white);
+}
+
+.stats-display p {
+    margin: 5px 0;
+}
+
+/* Reuse .menu-button style. Ensure icons are hidden if not used. */
+#levelCompleteScreen .menu-button {
+    display: block;
+    width: 100%;
+    margin: 10px 0;
+    text-align: center;
+}
+#levelCompleteScreen .menu-button .icon {
+    display: none;
+}
+
+#settingsScreen {
+    background-color: var(--dark-green);
+    color: var(--white);
+    display: flex; /* Hidden unless active */
+    flex-direction: column;
+    justify-content: flex-start; /* Align content to top */
+    align-items: center;
+    /* padding-top: 60px; Account for top-bar - handled by no default padding */
+}
+
+/* Reuse .top-bar style from Level Select or define specifically if different */
+#settingsScreen .top-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 10px 0;
+    background-color: var(--dark-green); /* Consistent with other top bars */
+    color: var(--white);
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    z-index: 1; /* Ensure it's above settings-content if it scrolls */
+}
+ #settingsScreen .top-bar h2 {
+    margin: 0;
+    font-size: 1.5em;
+}
+
+.settings-content {
+    width: 100%;
+    max-width: 400px;
+    padding: 20px;
+    overflow-y: auto; /* If more settings are added */
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center items like Reset Progress button */
+}
+
+.setting-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 10px;
+    margin-bottom: 15px;
+    background-color: rgba(255,255,255,0.05); /* Slightly lighter background for item */
+    border-radius: 8px;
+    width: 100%;
+}
+
+.setting-item label {
+    font-size: 1.1em;
+    flex-grow: 1;
+}
+
+.toggle-switch, .segmented-control {
+    display: flex;
+    border-radius: 5px;
+    overflow: hidden; /* Ensures buttons stay rounded within container */
+    border: 1px solid var(--light-green);
+}
+
+.toggle-switch button, .segmented-control button {
+    background-color: transparent;
+    color: var(--light-green);
+    border: none;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+.toggle-switch button:not(:last-child),
+.segmented-control button:not(:last-child) {
+  border-right: 1px solid var(--light-green);
+}
+
+.toggle-switch button.active, .segmented-control button.active {
+    background-color: var(--light-green);
+    color: var(--dark-green);
+}
+.toggle-switch button:hover:not(.active),
+.segmented-control button:hover:not(.active) {
+    background-color: rgba(165, 214, 167, 0.3); /* Light green transparent hover */
+}
+
+#settingsScreen .warning-button {
+    background-color: #FF6347; /* Tomato red for warning */
+    color: var(--white);
+    margin-top: 20px; /* Space above reset button */
+    width: calc(100% - 20px); /* Take padding into account */
+    max-width: calc(400px - 20px);
+}
+#settingsScreen .warning-button:hover {
+    background-color: #E55337; /* Darker red on hover */
+}
+
+#settingsScreen .back-button {
+    width: auto;
+    padding: 10px 20px;
+    margin-top: auto; /* Pushes to bottom if content doesn't fill screen */
+    margin-bottom: 10px; /* Space from bottom */
+    align-self: center;
+}
+
+/* Adjust padding for screens that have a .top-bar or manage internal padding */
+#levelSelectScreen, #settingsScreen, #gamePlayScreen {
+    padding: 0;
+}
